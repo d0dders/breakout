@@ -126,7 +126,10 @@ function GenerateQuadsBalls(atlas)
     return quads
 end
 
-
+--[[
+    This function is specifically made to piece out the powerups from the
+    sprite sheet.
+]]
 function GenerateQuadsPowerups(atlas)
     local x = 0
     local y = 192

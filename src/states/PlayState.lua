@@ -28,6 +28,7 @@ function PlayState:enter(params)
     self.highScores = params.highScores
     self.ball = params.ball
     self.level = params.level
+    self.powerups = {}
 
     self.recoverPoints = 5000
 
@@ -53,6 +54,9 @@ function PlayState:update(dt)
     -- update positions based on velocity
     self.paddle:update(dt)
     self.ball:update(dt)
+    for k, powerup in pairs(self.powerups) do
+        powerup:update(dt)
+    end
 
     if self.ball:collides(self.paddle) then
         -- raise ball above paddle in case it goes below it, then reverse dy
@@ -73,6 +77,15 @@ function PlayState:update(dt)
         end
 
         gSounds['paddle-hit']:play()
+    end
+
+    --detect collision with powerup
+    for k, powerup in pairs(self.powerups) do
+        if powerup:collides(self.paddle) then
+            -- for now just play a sound to confirm we collecte the power up
+            gSounds['victory']:play()
+            table.remove(self.powerups, k)
+        end
     end
 
     -- detect collision across all bricks with the ball
@@ -195,12 +208,20 @@ function PlayState:update(dt)
     if love.keyboard.wasPressed('escape') then
         love.event.quit()
     end
+
+    if love.keyboard.wasPressed('p') then
+        table.insert(self.powerups, Powerup(4))
+    end
 end
 
 function PlayState:render()
     -- render bricks
     for k, brick in pairs(self.bricks) do
         brick:render()
+    end
+
+    for k, powerup in pairs(self.powerups) do
+        powerup:render()
     end
 
     -- render all particle systems
