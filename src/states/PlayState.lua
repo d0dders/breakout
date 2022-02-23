@@ -89,6 +89,18 @@ function PlayState:update(dt)
         if powerup:collides(self.paddle) then
             -- for now just play a sound to confirm we collecte the power up
             gSounds['victory']:play()
+            for i = 1, 2, 1 do
+                -- add new ball to balls table
+                table.insert(self.balls, Ball())
+                -- set ball x and y to paddle location
+                self.balls[#self.balls].x = self.paddle.x + (self.paddle.width / 2) - 4
+                self.balls[#self.balls].y = self.paddle.y - 8
+                -- set ball to random colour
+                self.balls[#self.balls].skin = math.random(7)
+                -- set ball moving
+                ballStartVelocity(self.balls[#self.balls])     
+            end
+            -- remove powerup
             table.remove(self.powerups, k)
         end
     end
