@@ -29,7 +29,9 @@ function PlayState:enter(params)
     self.balls = params.balls
     self.level = params.level
     self.powerups = {}
+    self.timer = 0
 
+    self.powerupTime = math.random(20, 40)
     self.recoverPoints = 5000
 
     -- give ball random starting velocity
@@ -52,6 +54,12 @@ function PlayState:update(dt)
 
     -- update positions based on velocity
     self.paddle:update(dt)
+    self.timer = self.timer + dt
+    if self.timer >= self.powerupTime then
+        self:spawnPowerup()
+        self.timer = 0
+        self.powerupTime = math.random(20, 40)
+    end
     
     for k, ball in pairs(self.balls) do
         ball:update(dt)
@@ -235,7 +243,7 @@ function PlayState:update(dt)
     end
 
     if love.keyboard.wasPressed('p') then
-        table.insert(self.powerups, Powerup(4))
+        self:spawnPowerup()
     end
 end
 
@@ -286,4 +294,8 @@ function ballStartVelocity(ball)
         -- give ball random starting velocity
         ball.dx = math.random(-200, 200)
         ball.dy = math.random(-50, -60)
+end
+
+function PlayState:spawnPowerup()
+    table.insert(self.powerups, Powerup(4))
 end
