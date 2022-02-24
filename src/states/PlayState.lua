@@ -111,6 +111,9 @@ function PlayState:update(dt)
             end
             -- remove powerup
             table.remove(self.powerups, k)
+        elseif powerup.y >= VIRTUAL_HEIGHT then
+            -- remove powerup if it goes off screen
+            table.remove(self.powerups, k)
         end
     end
 
@@ -145,7 +148,7 @@ function PlayState:update(dt)
                     self.paddle.width = math.min(128, self.paddle.width + 32)
 
                     -- multiply grow points by 2
-                    self.growPoints = self.growPoints + math.min(100000, self.growPoints * 2)
+                    self.growPoints = math.min(100000, self.growPoints * 2)
                 
                 end
 
@@ -160,7 +163,8 @@ function PlayState:update(dt)
                         score = self.score,
                         highScores = self.highScores,
                         ball = ball,
-                        recoverPoints = self.recoverPoints
+                        recoverPoints = self.recoverPoints,
+                        growPoints = self.growPoints
                     })
                 end
 
@@ -286,7 +290,7 @@ function PlayState:render()
     end
 
 
-    renderScore(self.score)
+    renderScore(self.score .. ' ' .. self.growPoints)
     renderHealth(self.health)
 
     -- pause text, if paused
