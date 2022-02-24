@@ -33,6 +33,7 @@ function PlayState:enter(params)
 
     self.powerupTime = math.random(20, 40)
     self.recoverPoints = 5000
+    self.growPoints = 2000
 
     -- give ball random starting velocity
     ballStartVelocity(self.balls[1])
@@ -137,6 +138,17 @@ function PlayState:update(dt)
                     gSounds['recover']:play()
                 end
 
+                -- if we have enough points grow the paddle size
+                if self.score >= self.growPoints then
+                    -- reduce paddle size to a minimum of 1
+                    self.paddle.size = math.min(4, self.paddle.size + 1)
+                    self.paddle.width = math.min(128, self.paddle.width + 32)
+
+                    -- multiply grow points by 2
+                    self.growPoints = self.growPoints + math.min(100000, self.growPoints * 2)
+                
+                end
+
                 -- go to our victory screen if there are no more bricks left
                 if self:checkVictory() then
                     gSounds['victory']:play()
@@ -212,6 +224,10 @@ function PlayState:update(dt)
             if #self.balls < 1 then
                 self.health = self.health - 1
                 gSounds['hurt']:play()
+
+                -- reduce paddle size to a minimum of 1
+                self.paddle.size = math.max(1, self.paddle.size - 1)
+                self.paddle.width = math.max(32, self.paddle.width - 32)
 
                 if self.health == 0 then
                     gStateMachine:change('game-over', {
