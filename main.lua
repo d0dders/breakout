@@ -67,7 +67,8 @@ function love.load()
         ['balls'] = GenerateQuadsBalls(gTextures['main']),
         ['bricks'] = GenerateQuadsBricks(gTextures['main']),
         ['hearts'] = GenerateQuads(gTextures['hearts'], 10, 9),
-        ['powerups'] = GenerateQuadsPowerups(gTextures['main'])
+        ['powerups'] = GenerateQuadsPowerups(gTextures['main']),
+        ['lock'] = GenerateLockBrick(gTextures['main'])
     }
     
     -- initialize our virtual resolution, which will be rendered within our
@@ -281,6 +282,15 @@ function renderHealth(health)
     for i = 1, 3 - health do
         love.graphics.draw(gTextures['hearts'], gFrames['hearts'][2], healthX, 4)
         healthX = healthX + 11
+    end
+end
+
+--[[
+    Renders key left of health of key has been picked up
+]]
+function renderKey(hasKey)
+    if hasKey then 
+        love.graphics.draw(gTextures['main'], gFrames['powerups'][10], VIRTUAL_WIDTH - 116, 4, nil, .5, nil)
     end
 end
 

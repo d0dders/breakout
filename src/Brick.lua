@@ -18,6 +18,12 @@ Brick = Class{}
 
 -- some of the colors in our palette (to be used with particle systems)
 paletteColors = {
+    -- padlock will use gold
+    [0] = {
+        ['r'] = 251,
+        ['g'] = 242,
+        ['b'] = 54
+    },
     -- blue
     [1] = {
         ['r'] = 99,
@@ -50,7 +56,7 @@ paletteColors = {
     }
 }
 
-function Brick:init(x, y)
+function Brick:init(x, y, locked)
     -- used for coloring and score calculation
     self.tier = 0
     self.color = 1
@@ -60,6 +66,9 @@ function Brick:init(x, y)
     self.width = 32
     self.height = 16
     
+    -- defines if the brick is a locked brick (default to false)
+    self.locked = locked or false
+
     -- used to determine whether this brick should be rendered
     self.inPlay = true
 
@@ -115,7 +124,7 @@ function Brick:hit()
         end
     else
         -- if we're in the first tier and the base color, remove brick from play
-        if self.color == 1 then
+        if self.color <= 1 then
             self.inPlay = false
         else
             self.color = self.color - 1
@@ -134,12 +143,14 @@ function Brick:update(dt)
 end
 
 function Brick:render()
-    if self.inPlay then
+    if self.inPlay and self.locked == false then
         love.graphics.draw(gTextures['main'], 
             -- multiply color by 4 (-1) to get our color offset, then add tier to that
             -- to draw the correct tier and color brick onto the screen
             gFrames['bricks'][1 + ((self.color - 1) * 4) + self.tier],
             self.x, self.y)
+    elseif self.inPlay and self.locked == true then
+        love.graphics.draw(gTextures['main'], gFrames['lock'][1], self.x, self.y)
     end
 end
 

@@ -123,6 +123,10 @@ function LevelMaker.createMap(level)
     if #bricks == 0 then
         return self.createMap(level)
     else
+        randomIndex = math.random(1, #bricks)
+        bricks[randomIndex].locked = true
+        bricks[randomIndex].tier = 0
+        bricks[randomIndex].color = 0
         return bricks
     end
 end
