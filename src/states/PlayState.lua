@@ -28,10 +28,14 @@ function PlayState:enter(params)
     self.highScores = params.highScores
     self.balls = params.balls
     self.level = params.level
+    self.containsLockedBrick = params.containsLockedBrick
     self.powerups = {}
-    self.timer = 0
+    self.multiballTimer = 0
+    self.keyTimer = 0
+    self.hasKey = false
 
-    self.powerupTime = math.random(20, 40)
+    self.multiballPowerupTime = math.random(20, 40)
+    self.keyPowerupTime = math.random(40, 60)
     self.recoverPoints = 5000
     self.growPoints = 2000
 
@@ -55,13 +59,11 @@ function PlayState:update(dt)
 
     -- update positions based on velocity
     self.paddle:update(dt)
-    self.timer = self.timer + dt
-    if self.timer >= self.powerupTime then
-        self:spawnPowerup()
-        self.timer = 0
-        self.powerupTime = math.random(20, 40)
-    end
-    
+
+    -- functions check if time has elapsed to spawn a ower up and if so will spawn them
+    self:checkSpawnMultiballPowerup(dt)
+    self:checkSpawnKeyPowerup(dt)
+
     for k, ball in pairs(self.balls) do
         ball:update(dt)
     end
@@ -96,19 +98,13 @@ function PlayState:update(dt)
     --detect collision with powerup
     for k, powerup in pairs(self.powerups) do
         if powerup:collides(self.paddle) then
-            -- for now just play a sound to confirm we collecte the power up
             gSounds['victory']:play()
-            for i = 1, 2, 1 do
-                -- add new ball to balls table
-                table.insert(self.balls, Ball())
-                -- set ball x and y to paddle location
-                self.balls[#self.balls].x = self.paddle.x + (self.paddle.width / 2) - 4
-                self.balls[#self.balls].y = self.paddle.y - 8
-                -- set ball to random colour
-                self.balls[#self.balls].skin = math.random(7)
-                -- set ball moving
-                ballStartVelocity(self.balls[#self.balls])     
+            if powerup.type == 4 then
+                self:activateMultiball()
+            elseif powerup.type == 10 then
+                self.hasKey = true
             end
+
             -- remove powerup
             table.remove(self.powerups, k)
         elseif powerup.y >= VIRTUAL_HEIGHT then
@@ -122,50 +118,56 @@ function PlayState:update(dt)
         for k, ball in pairs(self.balls) do
             -- only check collision if we're in play
             if brick.inPlay and ball:collides(brick) then
+                if brick.locked == false or (brick.locked == true and self.hasKey == true) then
+                    -- if hit brick was the padlocked brick chenge this flag
+                    if brick.locked then
+                        self.containsLockedBrick = false
+                        self.hasKey = false
+                    end
 
-                -- add to score
-                self.score = self.score + (brick.tier * 200 + brick.color * 25)
+                    -- add to score
+                    self.score = self.score + (brick.tier * 200 + brick.color * 25)
 
-                -- trigger the brick's hit function, which removes it from play
-                brick:hit()
+                    -- trigger the brick's hit function, which removes it from play
+                    brick:hit()
+                    -- if we have enough points, recover a point of health
+                    if self.score > self.recoverPoints then
+                        -- can't go above 3 health
+                        self.health = math.min(3, self.health + 1)
 
-                -- if we have enough points, recover a point of health
-                if self.score > self.recoverPoints then
-                    -- can't go above 3 health
-                    self.health = math.min(3, self.health + 1)
+                        -- multiply recover points by 2
+                        self.recoverPoints = self.recoverPoints + math.min(100000, self.recoverPoints * 2)
 
-                    -- multiply recover points by 2
-                    self.recoverPoints = self.recoverPoints + math.min(100000, self.recoverPoints * 2)
+                        -- play recover sound effect
+                        gSounds['recover']:play()
+                    end
 
-                    -- play recover sound effect
-                    gSounds['recover']:play()
-                end
+                    -- if we have enough points grow the paddle size
+                    if self.score >= self.growPoints then
+                        -- reduce paddle size to a minimum of 1
+                        self.paddle.size = math.min(4, self.paddle.size + 1)
+                        self.paddle.width = math.min(128, self.paddle.width + 32)
 
-                -- if we have enough points grow the paddle size
-                if self.score >= self.growPoints then
-                    -- reduce paddle size to a minimum of 1
-                    self.paddle.size = math.min(4, self.paddle.size + 1)
-                    self.paddle.width = math.min(128, self.paddle.width + 32)
+                        -- multiply grow points by 2
+                        self.growPoints = math.min(100000, self.growPoints * 2)
+                    
+                    end
 
-                    -- multiply grow points by 2
-                    self.growPoints = math.min(100000, self.growPoints * 2)
-                
-                end
+                    -- go to our victory screen if there are no more bricks left
+                    if self:checkVictory() then
+                        gSounds['victory']:play()
 
-                -- go to our victory screen if there are no more bricks left
-                if self:checkVictory() then
-                    gSounds['victory']:play()
-
-                    gStateMachine:change('victory', {
-                        level = self.level,
-                        paddle = self.paddle,
-                        health = self.health,
-                        score = self.score,
-                        highScores = self.highScores,
-                        ball = ball,
-                        recoverPoints = self.recoverPoints,
-                        growPoints = self.growPoints
-                    })
+                        gStateMachine:change('victory', {
+                            level = self.level,
+                            paddle = self.paddle,
+                            health = self.health,
+                            score = self.score,
+                            highScores = self.highScores,
+                            ball = ball,
+                            recoverPoints = self.recoverPoints,
+                            growPoints = self.growPoints
+                        })
+                    end
                 end
 
                 --
@@ -262,8 +264,14 @@ function PlayState:update(dt)
         love.event.quit()
     end
 
+    -- for testing, spawns multiball powerup
     if love.keyboard.wasPressed('p') then
-        self:spawnPowerup()
+        self:spawnPowerup(4)
+    end
+
+    -- for testing spawns key
+    if love.keyboard.wasPressed('k') then
+        self:spawnPowerup(10)
     end
 end
 
@@ -290,8 +298,9 @@ function PlayState:render()
     end
 
 
-    renderScore(self.score .. ' ' .. self.growPoints)
+    renderScore(self.score)
     renderHealth(self.health)
+    renderKey(self.hasKey)
 
     -- pause text, if paused
     if self.paused then
@@ -316,6 +325,44 @@ function ballStartVelocity(ball)
         ball.dy = math.random(-50, -60)
 end
 
-function PlayState:spawnPowerup()
-    table.insert(self.powerups, Powerup(4))
+function PlayState:checkSpawnMultiballPowerup(dt)
+    -- check wehter to spawn a multiball powerup
+    -- and spawn if needed
+    self.multiballTimer = self.multiballTimer + dt
+    if self.multiballTimer >= self.multiballPowerupTime then
+        self:spawnPowerup(4)
+        self.multiballTimer = 0
+        self.multiballPowerupTime = math.random(20, 40)
+    end
+end
+
+function PlayState:checkSpawnKeyPowerup(dt)
+    -- check wehter to spawn a key powerup
+    -- and spawn if needed
+    if self.containsLockedBrick then
+        self.keyTimer = self.keyTimer + dt
+        if self.keyTimer >= self.keyPowerupTime then
+            self:spawnPowerup(10)
+            self.keyTimer = 0
+            self.keyPowerupTime = math.random(40, 60)
+        end
+    end
+end
+
+function PlayState:spawnPowerup(powerType)
+    table.insert(self.powerups, Powerup(powerType))
+end
+
+function PlayState:activateMultiball()
+    for i = 1, 2, 1 do
+        -- add new ball to balls table
+        table.insert(self.balls, Ball())
+        -- set ball x and y to paddle location
+        self.balls[#self.balls].x = self.paddle.x + (self.paddle.width / 2) - 4
+        self.balls[#self.balls].y = self.paddle.y - 8
+        -- set ball to random colour
+        self.balls[#self.balls].skin = math.random(7)
+        -- set ball moving
+        ballStartVelocity(self.balls[#self.balls])     
+    end
 end

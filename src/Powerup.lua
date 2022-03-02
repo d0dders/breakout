@@ -4,7 +4,10 @@ function Powerup:init(power)
     -- simple positional and dimensional variables
     self.width = 16
     self.height = 16
-    self.type = 4
+    
+    -- an int representing which power and corresponding sprite we want to use
+    -- multiball == 4, key == 10
+    self.type = power
 
     self.y = - 10
     self.x = math.random(16, VIRTUAL_WIDTH  - 32)
@@ -13,10 +16,6 @@ function Powerup:init(power)
     -- X and Y axis, since the Powerup can move in two dimensions
     self.dy = 40
     self.dx = 0
-
-    -- an int representing which power and corresponding srtie we want to use
-    -- multiball == 4
-    self.power = power
 end
 
 --[[
@@ -52,5 +51,5 @@ function Powerup:update(dt)
 end
 
 function Powerup:render()
-    love.graphics.draw(gTextures['main'], gFrames['powerups'][self.power], self.x, self.y)
+    love.graphics.draw(gTextures['main'], gFrames['powerups'][self.type], self.x, self.y)
 end
