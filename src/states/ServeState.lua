@@ -48,7 +48,8 @@ function ServeState:update(dt)
             balls = self.balls,
             level = self.level,
             recoverPoints = self.recoverPoints,
-            growPoints = self.growPoints
+            growPoints = self.growPoints,
+            containsLockedBrick = self.level % 2 == 0
         })
     end
 

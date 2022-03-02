@@ -28,11 +28,14 @@ function PlayState:enter(params)
     self.highScores = params.highScores
     self.balls = params.balls
     self.level = params.level
+    self.containsLockedBrick = params.containsLockedBrick
     self.powerups = {}
-    self.timer = 0
+    self.multiballTimer = 0
+    self.keyTimer = 0
     self.hasKey = false
 
-    self.powerupTime = math.random(20, 40)
+    self.multiballPowerupTime = math.random(20, 40)
+    self.keyPowerupTime = math.random(40, 60)
     self.recoverPoints = 5000
     self.growPoints = 2000
 
@@ -57,9 +60,10 @@ function PlayState:update(dt)
     -- update positions based on velocity
     self.paddle:update(dt)
 
-    -- control multiball power up spawning
+    -- functions check if time has elapsed to spawn a ower up and if so will spawn them
     self:checkSpawnMultiballPowerup(dt)
-    
+    self:checkSpawnKeyPowerup(dt)
+
     for k, ball in pairs(self.balls) do
         ball:update(dt)
     end
@@ -115,6 +119,12 @@ function PlayState:update(dt)
             -- only check collision if we're in play
             if brick.inPlay and ball:collides(brick) then
                 if brick.locked == false or (brick.locked == true and self.hasKey == true) then
+                    -- if hit brick was the padlocked brick chenge this flag
+                    if brick.locked then
+                        self.containsLockedBrick = false
+                        self.hasKey = false
+                    end
+
                     -- add to score
                     self.score = self.score + (brick.tier * 200 + brick.color * 25)
 
@@ -318,11 +328,24 @@ end
 function PlayState:checkSpawnMultiballPowerup(dt)
     -- check wehter to spawn a multiball powerup
     -- and spawn if needed
-    self.timer = self.timer + dt
-    if self.timer >= self.powerupTime then
+    self.multiballTimer = self.multiballTimer + dt
+    if self.multiballTimer >= self.multiballPowerupTime then
         self:spawnPowerup(4)
-        self.timer = 0
-        self.powerupTime = math.random(20, 40)
+        self.multiballTimer = 0
+        self.multiballPowerupTime = math.random(20, 40)
+    end
+end
+
+function PlayState:checkSpawnKeyPowerup(dt)
+    -- check wehter to spawn a key powerup
+    -- and spawn if needed
+    if self.containsLockedBrick then
+        self.keyTimer = self.keyTimer + dt
+        if self.keyTimer >= self.keyPowerupTime then
+            self:spawnPowerup(10)
+            self.keyTimer = 0
+            self.keyPowerupTime = math.random(40, 60)
+        end
     end
 end
 
